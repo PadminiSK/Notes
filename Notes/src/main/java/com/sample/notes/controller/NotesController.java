@@ -6,8 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import com.sample.notes.model.MavNotes;
-import com.sample.notes.model.MavNotesUser;
+import com.sample.notes.model.*;
 import com.sample.notes.repository.MavNotesRepository;
 import com.sample.notes.repository.MavNotesUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.sample.notes.model.NoteUsers;
-import com.sample.notes.model.Notes;
 import com.sample.notes.repository.NoteUsersRepository;
 import com.sample.notes.repository.NotesRepository;
 import org.springframework.web.server.ResponseStatusException;
@@ -158,5 +155,15 @@ public class NotesController {
 		user.setCreated_at(new Date());
 		user.setUpdated_at(new Date());
 		return mavNotesUserRepository.save(user);
+	}
+
+	// login
+	@PostMapping("/auth/local")
+	public MavNotesUser login(@RequestBody LoginRequest request) throws ServerException {
+		if(request.getIdentifier().isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		List<MavNotesUser> users = mavNotesUserRepository.findUserByIdentifier(request.getIdentifier());
+		if(users.size() == 0) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		if(!users.get(0).getPassword().equals(request.getPassword())) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		return users.get(0);
 	}
 }
