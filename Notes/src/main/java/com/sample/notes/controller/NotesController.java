@@ -1,32 +1,35 @@
 package com.sample.notes.controller;
 
 import java.rmi.ServerException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.sample.notes.model.*;
+import com.sample.notes.repository.MavNotesRepository;
+import com.sample.notes.repository.MavNotesUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.sample.notes.model.NoteUsers;
-import com.sample.notes.model.Notes;
 import com.sample.notes.repository.NoteUsersRepository;
 import com.sample.notes.repository.NotesRepository;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@RequestMapping("/api/v1")
 public class NotesController {
 
 	@Autowired
 	NoteUsersRepository noteUsersRepo;
+
+	@Autowired
+	MavNotesUserRepository mavNotesUserRepository;
+
+	@Autowired
+	MavNotesRepository mavNotesRepository;
 
 	@Autowired
 	NotesRepository notesRepo;
@@ -115,4 +118,54 @@ public class NotesController {
 		}
 	}
 
+	// fetch all notes (for userId if provided)
+	@GetMapping("/notes")
+	public List<MavNotes> getNotesByUser(@RequestParam(name = "userId", required = false) Optional<Integer> userId) throws ServerException {
+		if(userId.isPresent()) {
+			return mavNotesRepository.findAllByUserId(userId.get());
+		}
+		return mavNotesRepository.findAll();
+	}
+
+	//create a new note
+	@PostMapping("/notes")
+	public MavNotes createNote(@RequestBody MavNotes note) throws ServerException {
+		note.setCreated_at(new Date());
+		note.setUpdated_at(new Date());
+		return mavNotesRepository.save(note);
+	}
+
+	// update a note
+	@PutMapping("/notes/{noteId}")
+	public ResponseEntity<Object> updateNote(@RequestBody MavNotes note, @PathVariable("noteId") Long noteId) throws ServerException {
+		Optional<MavNotes> exNote = mavNotesRepository.findById(noteId);
+		if(exNote.isPresent()) {
+			if(exNote.get().getId() != null) {
+				exNote.get().setNote(note.getNote());
+				exNote.get().setTitle(note.getTitle());
+				exNote.get().setUpdated_at(new Date());
+				mavNotesRepository.save(exNote.get());
+				return ResponseEntity.status(HttpStatus.OK).build();
+			}
+		}
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity Not found");
+	}
+
+	//create a new user
+	@PostMapping("/users")
+	public MavNotesUser createUser(@RequestBody MavNotesUser user) throws ServerException {
+		user.setCreated_at(new Date());
+		user.setUpdated_at(new Date());
+		return mavNotesUserRepository.save(user);
+	}
+
+	// login
+	@PostMapping("/auth/local")
+	public MavNotesUser login(@RequestBody LoginRequest request) throws ServerException {
+		if(request.getIdentifier().isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		List<MavNotesUser> users = mavNotesUserRepository.findUserByIdentifier(request.getIdentifier());
+		if(users.size() == 0) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		if(!users.get(0).getPassword().equals(request.getPassword())) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+		return users.get(0);
+	}
 }
