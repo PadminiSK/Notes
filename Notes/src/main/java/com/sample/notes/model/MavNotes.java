@@ -14,6 +14,7 @@ public class MavNotes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
+    public String title;
     public String note;
     public Long user_id;
     @ManyToOne

@@ -19,6 +19,7 @@ import com.sample.notes.repository.NotesRepository;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@RequestMapping("/api/v1")
 public class NotesController {
 
 	@Autowired
@@ -141,6 +142,7 @@ public class NotesController {
 		if(exNote.isPresent()) {
 			if(exNote.get().getId() != null) {
 				exNote.get().setNote(note.getNote());
+				exNote.get().setTitle(note.getTitle());
 				exNote.get().setUpdated_at(new Date());
 				mavNotesRepository.save(exNote.get());
 				return ResponseEntity.status(HttpStatus.OK).build();
