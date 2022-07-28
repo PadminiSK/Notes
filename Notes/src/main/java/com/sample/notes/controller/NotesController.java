@@ -158,6 +158,18 @@ public class NotesController {
 		user.setUpdated_at(new Date());
 		return mavNotesUserRepository.save(user);
 	}
+	
+	@DeleteMapping("/delete/{noteId}")
+	public String DeleteNote(@PathVariable Long noteId)
+			throws ServerException {
+		Optional<Notes> notes=notesRepo.findById(id);
+		if(!(notes.isPresent()))
+		{
+			return "id is not present";
+		}
+		notesRepo.deleteById(id);
+		return "notes successfully deleted";
+	}
 
 	// login
 	@PostMapping("/auth/local")
